@@ -1,5 +1,5 @@
 ---
-title_mn: лхагвасүрэн байна өө хү
+title_mn: лхагвасүрэн байна өө хүo
 title_en: my name is lkhagvasuren
 category: Амьдрал
 date: 2026-04-13T08:31:53.584Z
