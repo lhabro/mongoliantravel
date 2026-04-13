@@ -328,7 +328,10 @@
 
   function markdownToHtml(md) {
     return md
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:8px;margin:1rem 0">')
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+        const url = src.startsWith('http') ? src : `https://raw.githubusercontent.com/lhabro/mongoliantravel/main${src}`;
+        return `<img src="${url}" alt="${alt}" style="max-width:100%;border-radius:8px;margin:1rem 0">`;
+      })
       .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
       .replace(/\*([^*]+)\*/g, '<em>$1</em>')
       .replace(/^### (.+)$/gm, '<h3 style="font-family:Playfair Display,serif;margin:1rem 0 0.5rem">$1</h3>')
