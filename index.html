@@ -152,6 +152,8 @@
       </div>
     </article>
 
+    <div id="dynamic-posts" class="post-grid"></div>
+
     <div class="post-grid">
       <a href="#" class="post-card">
         <div class="post-thumb" style="background:linear-gradient(135deg,#2E7D32,#66BB6A)">🥩</div>
@@ -281,6 +283,82 @@
   };
 
   let currentLang = 'mn';
+  let allPosts = [];
+
+  const emojis = { 'Аялал': '🏔️', 'Хоол': '🥩', 'Амьдрал': '🌿' };
+  const thumbBgs = { 'Аялал': 'linear-gradient(135deg,#1565C0,#42A5F5)', 'Хоол': 'linear-gradient(135deg,#2E7D32,#66BB6A)', 'Амьдрал': 'linear-gradient(135deg,#AD1457,#F48FB1)' };
+
+  function parseFrontmatter(text) {
+    const m = text.match(/^---\n([\s\S]*?)\n---/);
+    if (!m) return {};
+    const obj = {};
+    m[1].split('\n').forEach(line => {
+      const [k, ...v] = line.split(':');
+      if (k) obj[k.trim()] = v.join(':').trim().replace(/^["']|["']$/g, '');
+    });
+    obj.body = text.replace(/^---[\s\S]*?---\n/, '');
+    return obj;
+  }
+
+  function renderPosts(posts, lang) {
+    if (!posts.length) return;
+    const grid = document.getElementById('dynamic-posts');
+    if (!grid) return;
+    grid.innerHTML = '';
+    posts.forEach(p => {
+      const title = lang === 'en' ? (p.title_en || p.title_mn) : p.title_mn;
+      const cat = p.category || 'Аялал';
+      const bg = thumbBgs[cat] || thumbBgs['Аялал'];
+      const emoji = emojis[cat] || '📝';
+      const date = p.date ? new Date(p.date).toLocaleDateString('mn-MN') : '';
+      const card = document.createElement('a');
+      card.href = '#post-' + (p.slug || '');
+      card.className = 'post-card';
+      card.onclick = (e) => { e.preventDefault(); showPost(p, lang); };
+      card.innerHTML = `
+        <div class="post-thumb" style="background:${bg}">${emoji}</div>
+        <div class="post-card-body">
+          <div class="cat-label">${emoji} ${cat}</div>
+          <h3>${title}</h3>
+          <p>${date}</p>
+        </div>`;
+      grid.appendChild(card);
+    });
+  }
+
+  function showPost(p, lang) {
+    const title = lang === 'en' ? (p.title_en || p.title_mn) : p.title_mn;
+    const body = lang === 'en' ? (p.body_en || p.body_mn || p.body || '') : (p.body_mn || p.body || '');
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:999;display:flex;align-items:center;justify-content:center;padding:1rem';
+    overlay.innerHTML = `
+      <div style="background:#FFFDF9;border-radius:16px;max-width:700px;width:100%;max-height:85vh;overflow-y:auto;padding:2rem;position:relative">
+        <button onclick="this.closest('div').parentElement.remove()" style="position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#7A6A55">✕</button>
+        <h2 style="font-family:'Playfair Display',serif;font-size:1.6rem;margin-bottom:1rem;color:#1A1208">${title}</h2>
+        <div style="font-size:0.95rem;line-height:1.8;color:#3a3020;white-space:pre-wrap">${body}</div>
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  async function loadPosts() {
+    try {
+      const res = await fetch('https://api.github.com/repos/lhabro/mongoliantravel/contents/posts');
+      if (!res.ok) return;
+      const files = await res.json();
+      const mdFiles = files.filter(f => f.name.endsWith('.md'));
+      const posts = await Promise.all(mdFiles.map(async f => {
+        const r = await fetch(f.download_url);
+        const text = await r.text();
+        const p = parseFrontmatter(text);
+        p.slug = f.name.replace('.md', '');
+        return p;
+      }));
+      allPosts = posts.sort((a, b) => new Date(b.date) - new Date(a.date));
+      renderPosts(allPosts, currentLang);
+    } catch(e) {}
+  }
+
+  loadPosts();
 
   function setLang(lang) {
     currentLang = lang;
@@ -303,6 +381,7 @@
         el.textContent = val;
       }
     });
+    renderPosts(allPosts, lang);
   }
 </script>
 </body>
