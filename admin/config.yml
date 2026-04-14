@@ -4,7 +4,6 @@ backend:
   branch: main
   base_url: https://mongoliantravel.xyz
   auth_endpoint: api/auth
-  auth_type: pkce
 
 media_folder: "images"
 public_folder: "/images"
