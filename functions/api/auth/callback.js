@@ -27,24 +27,22 @@ export async function onRequest(context) {
   }
 
   const token = data.access_token;
+  const message = `authorization:github:success:${JSON.stringify({token, provider: 'github'})}`;
 
-  const html = `<!doctype html><html><body><script>
-  var token = '${token}';
-  var provider = 'github';
-  var message = 'authorization:' + provider + ':success:' + JSON.stringify({token: token, provider: provider});
-  
-  function sendMessage() {
-    if (window.opener) {
-      window.opener.postMessage(message, '*');
-      setTimeout(function() { window.close(); }, 500);
-    } else {
-      localStorage.setItem('decap-cms-token', token);
-      document.body.innerHTML = '<p>Нэвтэрлээ! Энэ цонхыг хааж admin хуудас руу буцна уу.</p>';
-    }
+  const html = `<!doctype html><html><head><meta charset="utf-8"></head><body><script>
+(function() {
+  var message = ${JSON.stringify(message)};
+  if (window.opener) {
+    window.opener.postMessage(message, '*');
+    setTimeout(function() { window.close(); }, 1000);
+  } else if (window.parent && window.parent !== window) {
+    window.parent.postMessage(message, '*');
+  } else {
+    sessionStorage.setItem('github_token', ${JSON.stringify(token)});
+    document.body.innerHTML = '<h2>Нэвтэрлээ!</h2><p><a href="/admin">Admin хуудас руу буцах</a></p>';
   }
-  
-  sendMessage();
-  <\/script></body></html>`;
+})();
+<\/script></body></html>`;
 
   return new Response(html, {
     headers: { 'Content-Type': 'text/html' },
